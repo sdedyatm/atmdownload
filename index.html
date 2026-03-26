@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0, viewport-fit=cover">
+  <title>SHADOWBROKER · ATM CORE v3.2.1</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      background: #000000;
+      font-family: 'Inter', 'Segoe UI', 'Fira Code', monospace;
+      color: #e0f2fe;
+      overflow-x: hidden;
+    }
+
+    /* ========== HERO SECTION – SHADOWBROKER ANIMATION ========== */
+    /* LEBAR DAN POSISI DISAMAKAN DENGAN KONTEN BAWAH (SIDEBAR) */
+    .hero {
+      position: relative;
+      width: 100%;
+      max-width: 680px;
+      /* SAMA DENGAN MAX-WIDTH SIDEBAR */
+      height: 52vh;
+      /* TINGGI PROPORSIONAL, TIDAK TERLALU DOMINAN */
+      min-height: 340px;
+      margin: 0 auto 20px;
+      /* HAPUS MARGIN ATAS (BUANG RUANG KOSONG) */
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow: 0 20px 35px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 255, 255, 0.2);
+      z-index: 5;
+    }
+
+    canvas#networkCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+    }
+
+    .scan-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: repeating-linear-gradient(0deg,
+          rgba(0, 255, 255, 0.02) 0px,
+          rgba(0, 255, 255, 0.02) 2px,
+          transparent 2px,
+          transparent 6px);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .radar-pulse {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 240, 255, 0.5);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+      pointer-events: none;
+      z-index: 2;
+      animation: radarSpin 8s linear infinite;
+    }
+
+    .radar-pulse::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 8px;
+      height: 8px;
+      background: #0ff;
+      border-radius: 50%;
+      box-shadow: 0 0 12px #0ff;
+      transform: translate(-50%, -50%);
+    }
+
+    @keyframes radarSpin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* ========== MAIN CONTENT – SINGLE COLUMN ========== */
+    .main-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 0 20px 60px;
+    }
+
+    /* Panel utama – satu kolom, lebar konsisten dengan hero */
+    .sidebar {
+      position: relative;
+      width: 100%;
+      max-width: 680px;
+      margin: 0 auto;
+      background: rgba(0, 0, 0, 0.78);
+      backdrop-filter: blur(14px);
+      border-radius: 32px;
+      border: 1px solid rgba(0, 255, 255, 0.35);
+      box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #0ff #1a2a2f;
+    }
+
+    .sidebar::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .sidebar::-webkit-scrollbar-track {
+      background: #0a1a1f;
+      border-radius: 8px;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb {
+      background: #0ff;
+      border-radius: 8px;
+    }
+
+    .content {
+      padding: 1.8rem 1.5rem 2rem;
+    }
+
+    .top-badge {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.2rem;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.4);
+      padding-bottom: 0.8rem;
+    }
+
+    .callsign {
+      font-family: 'Fira Code', monospace;
+      font-weight: 700;
+      font-size: 0.7rem;
+      background: rgba(0, 240, 255, 0.2);
+      padding: 0.25rem 1rem;
+      border-radius: 40px;
+      letter-spacing: 1.5px;
+      color: #0ff;
+      border: 0.5px solid cyan;
+      box-shadow: 0 0 6px rgba(0, 255, 255, 0.3);
+    }
+
+    .version {
+      font-family: monospace;
+      font-size: 0.65rem;
+      color: #7faaaf;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1.2;
+      margin: 0.5rem 0 0.25rem;
+      background: linear-gradient(130deg, #ffffff, #0ff, #ffd966);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+    }
+
+    .glitch {
+      font-size: 0.7rem;
+      color: #ffd966;
+      font-family: monospace;
+      margin-bottom: 1rem;
+      border-left: 3px solid #ffd700;
+      padding-left: 12px;
+    }
+
+    .glitch span {
+      color: #0ff;
+    }
+
+    .live-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 6px 12px;
+      border-radius: 40px;
+      width: fit-content;
+      font-size: 0.6rem;
+      margin-bottom: 12px;
+      border: 0.5px solid #0ff;
+    }
+
+    .led {
+      width: 8px;
+      height: 8px;
+      background: #0ff;
+      border-radius: 50%;
+      box-shadow: 0 0 8px cyan;
+      animation: pulseLed 1.5s infinite;
+    }
+
+    @keyframes pulseLed {
+      0% {
+        opacity: 0.4;
+        transform: scale(0.8);
+      }
+
+      100% {
+        opacity: 1;
+        transform: scale(1.2);
+      }
+    }
+
+    .feature-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      margin: 1.8rem 0;
+    }
+
+    .feature-card {
+      background: rgba(0, 20, 25, 0.5);
+      border-radius: 20px;
+      padding: 0.9rem 1rem;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      border: 1px solid rgba(0, 255, 255, 0.2);
+      transition: 0.2s;
+      backdrop-filter: blur(2px);
+    }
+
+    .feature-card:hover {
+      border-color: #ffd966;
+      background: rgba(0, 240, 255, 0.08);
+      transform: translateX(5px);
+      box-shadow: -5px 0 12px rgba(0, 255, 255, 0.1);
+    }
+
+    .icon {
+      width: 42px;
+      height: 42px;
+      background: radial-gradient(circle at 30% 30%, rgba(0, 240, 255, 0.2), #001d23);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      color: #0ff;
+      border: 1px solid rgba(0, 255, 255, 0.4);
+    }
+
+    .feature-title {
+      font-weight: 800;
+      font-size: 0.95rem;
+      background: linear-gradient(135deg, #fff, #ffd966);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: 4px;
+    }
+
+    .feature-desc {
+      font-size: 0.7rem;
+      color: #bdd4e2;
+      line-height: 1.4;
+    }
+
+    .highlight {
+      color: #0ff;
+      font-weight: 600;
+    }
+
+    .warning {
+      color: #ffb347;
+    }
+
+    .guide {
+      margin: 1.8rem 0;
+      background: rgba(0, 0, 0, 0.55);
+      border-radius: 24px;
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      overflow: hidden;
+    }
+
+    .guide-header {
+      background: rgba(0, 240, 255, 0.1);
+      padding: 0.8rem 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: bold;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.3);
+      font-size: 0.85rem;
+      color: #ffd966;
+    }
+
+    .steps-list {
+      padding: 1rem 1.2rem 1.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 0.8rem;
+    }
+
+    .step-number {
+      width: 26px;
+      height: 26px;
+      background: rgba(0, 240, 255, 0.2);
+      border-radius: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: bold;
+      color: #ffd966;
+      border: 0.5px solid cyan;
+      flex-shrink: 0;
+    }
+
+    .step-text {
+      flex: 1;
+    }
+
+    .step-title {
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: #fff;
+    }
+
+    .step-desc {
+      font-size: 0.68rem;
+      color: #b2d4e6;
+      line-height: 1.4;
+    }
+
+    .step-desc .mono {
+      font-family: monospace;
+      background: #0a1f22;
+      padding: 0 4px;
+      border-radius: 6px;
+      color: #0ff;
+    }
+
+    .button-zone {
+      text-align: center;
+      margin: 1.8rem 0 1rem;
+    }
+
+    .btn-install {
+      display: inline-block;
+      width: 100%;
+      text-align: center;
+      background: linear-gradient(95deg, #0a1215, #02181f);
+      padding: 0.9rem 0;
+      font-weight: 800;
+      letter-spacing: 2px;
+      font-size: 1rem;
+      text-decoration: none;
+      color: #0ff;
+      border: 1.5px solid rgba(255, 217, 0, 0.7);
+      border-radius: 60px;
+      transition: all 0.25s;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      font-family: 'Fira Code', monospace;
+    }
+
+    .btn-install:hover {
+      background: #0a1c22;
+      color: #ffd966;
+      border-color: #ffd966;
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px black;
+      text-shadow: 0 0 5px #ffd966;
+    }
+
+    .btn-install:active {
+      transform: translateY(1px);
+    }
+
+    .footer-note {
+      font-size: 0.6rem;
+      text-align: center;
+      color: #5b8c94;
+      border-top: 1px solid rgba(0, 240, 255, 0.25);
+      padding-top: 1rem;
+      margin-top: 1.5rem;
+      font-family: monospace;
+    }
+
+    /* ========== RESPONSIVE : HERO & SIDEBAR SAMA LEBAR, TANPA JARAK BERLEBIH ========== */
+    @media (max-width: 768px) {
+      .hero {
+        width: calc(100% - 40px);
+        /* SESUAI DENGAN PADDING .MAIN-CONTAINER (KIRI+KANAN 20px) */
+        max-width: none;
+        height: 42vh;
+        min-height: 280px;
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 0;
+        margin-bottom: 16px;
+        border-radius: 28px;
+      }
+
+      .radar-pulse {
+        width: 70px;
+        height: 70px;
+        bottom: 12px;
+        right: 12px;
+      }
+
+      .content {
+        padding: 1.2rem;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+    }
+
+    /* Untuk layar sangat kecil, tetap rapi */
+    @media (max-width: 480px) {
+      .hero {
+        height: 38vh;
+        min-height: 240px;
+        margin-bottom: 12px;
+      }
+
+      .sidebar {
+        border-radius: 28px;
+      }
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+
+<body>
+
+  <!-- HERO SECTION: SHADOWBROKER ANIMATION - RUANG KOSONG DIHAPUS, LEBAR DISAMAKAN DENGAN KONTEN -->
+  <div class="hero">
+    <canvas id="networkCanvas"></canvas>
+    <div class="scan-overlay"></div>
+    <div class="radar-pulse"></div>
+  </div>
+
+  <!-- MAIN CONTENT: SINGLE COLUMN, LEBAR FULL KONSISTEN DENGAN HERO -->
+  <div class="main-container">
+    <aside class="sidebar">
+      <div class="content">
+        <div class="top-badge">
+          <div class="callsign"><i class="fas fa-skull"></i>ATM Expedisi</div>
+          <div class="version">v3.2.1 · encrypted</div>
+        </div>
+        <div class="live-status">
+          <div class="led"></div>
+          <span>● Device Hmsi</span>
+        </div>
+        <h1>ATM Apps</h1>
+        <div class="glitch">
+          ⚡· perlindungan Ponsel Kru Atm ⚡<br>
+          <span># Lebih dari sekadar aplikasi Database</span>
+        </div>
+
+        <!-- FEATURE SET -->
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="icon"><i class="fas fa-shield-hooded"></i></div>
+            <div>
+              <div class="feature-title">ADMIN PERANGKAT</div>
+              <div class="feature-desc">Aktivasi administrator device → dengan fitur :<br>
+                <span class="warning"> fungsi Remote jarak jauh <span class="highlight">Mengamankan</span>
+                  jika Ponsel tertinggal / di Curi & Rusak
+              </div>
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="icon"><i class="fas fa-satellite-dish"></i></div>
+            <div>
+              <div class="feature-title">GPS Commands</div>
+              <div class="feature-desc">Lacak ponsel yang tertinggal dll,. melalui satelit, Wi‑Fi, sinyal seluler. <br>
+                <span class="highlight"> PERLINDUNGAN MAXIMAL</span> untuk Hp Kru ATM.
+              </div>
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="icon"><i class="fas fa-terminal"></i></div>
+            <div>
+              <div class="feature-title">REMOTE COMMAND</div>
+              <div class="feature-desc">Perintah dari Dasboard admin : <span class="highlight"># KUNCI HP <span class="highlight"># DERING KHUSUS</span> · <span class="highlight"># UNDUH KONTAK</span> · <span class="warning"><br> WIPE DATA</span> (factory reset).</div>
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="icon"><i class="fas fa-database"></i></div>
+            <div>
+              <div class="feature-title">BACKUP KONTAK</div>
+              <div class="feature-desc">Kontak hp tersimpan di server ATM terenkripsi. <span class="highlight">Pulihkan data <br>
+                </span> saat ganti HP. (hanya teks, tanpa media).</div>
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="icon"><i class="fas fa-chart-simple"></i></div>
+            <div>
+              <div class="feature-title">Database Harian</div>
+              <div class="feature-desc">Sistem antrian otomatis dibuat.
+                <br>pencarian data driver, dapat berjalan tanpa kuota internet.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- INSTALLATION GUIDE -->
+        <div class="guide">
+          <div class="guide-header">
+            <i class="fas fa-microchip"></i>
+            <span>▸ PROTOCOL INSTALLASI ◂</span>
+          </div>
+          <div class="steps-list">
+            <div class="step-item">
+              <div class="step-number">1</div>
+              <div class="step-text">
+                <div class="step-title">Unduh APK</div>
+                <div class="step-desc">Klik tombol <span class="mono">"⟫ INSTALL SEKARANG ⟪"</span> , file <span class="mono">Atmapp.apk</span> akan terunduh otomatis.</div>
+              </div>
+            </div>
+            <div class="step-item">
+              <div class="step-number">2</div>
+              <div class="step-text">
+                <div class="step-title">Aktifkan Sumber Tidak Dikenal</div>
+                <div class="step-desc">Pengaturan → Keamanan → Izinkan instalasi dari sumber tidak dikenal (Android 8+ aktifkan per browser).</div>
+              </div>
+            </div>
+            <div class="step-item">
+              <div class="step-number">3</div>
+              <div class="step-text">
+                <div class="step-title">Instal APK</div>
+                <div class="step-desc">Buka file <span class="mono">Atmapp.apk</span> di folder Unduhan, tekan instal, izinkan semua permission (lokasi/kontak).</div>
+              </div>
+            </div>
+            <div class="step-item">
+              <div class="step-number">4</div>
+              <div class="step-text">
+                <div class="step-title">Aktifkan Admin Perangkat</div>
+                <div class="step-desc">Buka aplikasi → aktivasi admin perangkat wajib untuk fitur remote security.</div>
+              </div>
+            </div>
+            <div class="step-item">
+              <div class="step-number">5</div>
+              <div class="step-text">
+                <div class="step-title">Izin Akses Penggunaan Aplikasi</div>
+                <div class="step-desc">Izinkan akses penggunaan aplikasi untuk proteksi tambahan (deteksi ancaman).</div>
+              </div>
+            </div>
+            <div class="step-item">
+              <div class="step-number">6</div>
+              <div class="step-text">
+                <div class="step-title">Registrasi Perangkat</div>
+                <div class="step-desc">Masukkan nama pemilik → tekan daftar → ID perangkat tergenerate otomatis.</div>
+              </div>
+            </div>
+            <div class="step-item">
+              <div class="step-number">7</div>
+              <div class="step-text">
+                <div class="step-title">Server Storage</div>
+                <div class="step-desc"><span class="highlight">Hanya data kontak teks</span> disimpan. Tidak ada akses ke galeri / media pribadi.</div>
+              </div>
+            </div>
+            <div class="step-item">
+              <div class="step-number">8</div>
+              <div class="step-text">
+                <div class="step-title">Final Check</div>
+                <div class="step-desc">Pastikan izin lokasi & admin aktif di pengaturan perangkat. Keamanan level maksimal.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="button-zone">
+          <a href="app.apk" class="btn-install" download>
+            <i class="fas fa-bolt"></i> INSTALL SEKARANG <i class="fas fa-shield-alt"></i>
+          </a>
+        </div>
+
+        <div class="footer-note">
+          <i class="fas fa-lock"></i> ENKRIPSI END-TO-END · SERVER ATM PROTECTED<br>
+          ⚠️ pastikan izin “sumber tidak dikenal” aktif sebelum instalasi
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    (function() {
+      const canvas = document.getElementById('networkCanvas');
+      let ctx = canvas.getContext('2d');
+      let width, height;
+      let animationId;
+      let time = 0;
+      // ========== DATA NODE – KOTA DI SUMATRA & JAWA ==========
+      const nodes = [{
+          name: "BANDA ACEH",
+          x: 0.28,
+          y: 0.22
+        },
+        {
+          name: "MEDAN",
+          x: 0.30,
+          y: 0.32
+        },
+        {
+          name: "PEKANBARU",
+          x: 0.28,
+          y: 0.42
+        },
+        {
+          name: "PADANG",
+          x: 0.25,
+          y: 0.45
+        },
+        {
+          name: "JAMBI",
+          x: 0.31,
+          y: 0.53
+        },
+        {
+          name: "PALEMBANG",
+          x: 0.28,
+          y: 0.62
+        },
+        {
+          name: "LAMPUNG",
+          x: 0.28,
+          y: 0.72
+        },
+        {
+          name: "TANGERANG",
+          x: 0.43,
+          y: 0.73
+        },
+        {
+          name: "JAKARTA",
+          x: 0.48,
+          y: 0.70
+        }, // pusat kendali
+        {
+          name: "BOGOR",
+          x: 0.52,
+          y: 0.74
+        },
+        {
+          name: "BANDUNG",
+          x: 0.55,
+          y: 0.72
+        },
+        {
+          name: "CIREBON",
+          x: 0.62,
+          y: 0.68
+        },
+        {
+          name: "SEMARANG",
+          x: 0.68,
+          y: 0.67
+        },
+        {
+          name: "MADIUN",
+          x: 0.75,
+          y: 0.71
+        },
+        {
+          name: "SURABAYA",
+          x: 0.80,
+          y: 0.70
+        }
+      ];
+      const centerIndex = nodes.findIndex(n => n.name === "JAKARTA");
+      const targetIndices = nodes.map((_, idx) => idx).filter(idx => idx !== centerIndex);
+      // Edge: semua node terhubung ke Jakarta (jalur utama) + koneksi lokal antar kota
+      const edges = [];
+      for (let i = 0; i < nodes.length; i++) {
+        if (i !== centerIndex) edges.push([centerIndex, i]);
+      }
+      // Koneksi memanjang Sumatra
+      const sumatraIndices = [0, 1, 2, 3, 4, 5, 6];
+      for (let i = 0; i < sumatraIndices.length - 1; i++) {
+        edges.push([sumatraIndices[i], sumatraIndices[i + 1]]);
+      }
+      // Koneksi Jawa
+      const javaIndices = [7, 8, 9, 10, 11, 12, 13, 14];
+      for (let i = 0; i < javaIndices.length - 1; i++) {
+        edges.push([javaIndices[i], javaIndices[i + 1]]);
+      }
+      // Penghubung Lampung - Tangerang (Sumatra-Jawa)
+      edges.push([6, 7]);
+      // ========== PULSE SYSTEM (dari Jakarta ke semua kota) ==========
+      class Pulse {
+        constructor(targetIdx, speed = 0.0045, offset = 0) {
+          this.targetIdx = targetIdx;
+          this.progress = offset;
+          this.speed = speed;
+        }
+        update() {
+          this.progress += this.speed;
+          if (this.progress >= 1) this.progress = 0;
+        }
+        getPosition() {
+          const start = nodes[centerIndex];
+          const end = nodes[this.targetIdx];
+          const x = start.x * width + (end.x - start.x) * width * this.progress;
+          const y = start.y * height + (end.y - start.y) * height * this.progress;
+          return {
+            x,
+            y
+          };
+        }
+      }
+      const pulses = targetIndices.map((idx, i) => new Pulse(idx, 0.0045, (i / targetIndices.length) * 0.8));
+      // ========== FUNGSI GAMBAR ==========
+      function drawBackgroundGlow(ctx, w, h) {
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, "#021018");
+        grad.addColorStop(1, "#000408");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+        for (let i = 0; i < 200; i++) {
+          if (i % 2 === 0) continue;
+          ctx.fillStyle = `rgba(100, 200, 255, ${Math.random() * 0.2})`;
+          ctx.fillRect(Math.random() * w, Math.random() * h, 1, 1);
+        }
+      }
+
+      function drawGrid(ctx, w, h) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(0, 180, 200, 0.2)";
+        ctx.lineWidth = 0.6;
+        for (let i = 0; i <= 6; i++) {
+          let y = h * (0.15 + i * 0.12);
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(w, y);
+          ctx.stroke();
+        }
+        for (let i = 0; i <= 8; i++) {
+          let x = w * (0.1 + i * 0.1);
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, h);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawCoastlines(ctx, w, h) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(0, 210, 255, 0.35)";
+        ctx.lineWidth = 1.5;
+        // Sumatra
+        ctx.beginPath();
+        ctx.moveTo(w * 0.28, h * 0.22);
+        ctx.lineTo(w * 0.30, h * 0.32);
+        ctx.lineTo(w * 0.28, h * 0.40);
+        ctx.lineTo(w * 0.25, h * 0.45);
+        ctx.lineTo(w * 0.22, h * 0.52);
+        ctx.lineTo(w * 0.22, h * 0.58);
+        ctx.lineTo(w * 0.24, h * 0.66);
+        ctx.lineTo(w * 0.28, h * 0.72);
+        ctx.lineTo(w * 0.33, h * 0.73);
+        ctx.lineTo(w * 0.32, h * 0.68);
+        ctx.lineTo(w * 0.30, h * 0.60);
+        ctx.lineTo(w * 0.32, h * 0.50);
+        ctx.lineTo(w * 0.35, h * 0.40);
+        ctx.lineTo(w * 0.34, h * 0.32);
+        ctx.lineTo(w * 0.32, h * 0.26);
+        ctx.closePath();
+        ctx.stroke();
+        // Jawa
+        ctx.beginPath();
+        ctx.moveTo(w * 0.40, h * 0.74);
+        ctx.lineTo(w * 0.48, h * 0.70);
+        ctx.lineTo(w * 0.55, h * 0.72);
+        ctx.lineTo(w * 0.60, h * 0.75);
+        ctx.lineTo(w * 0.65, h * 0.68);
+        ctx.lineTo(w * 0.70, h * 0.69);
+        ctx.lineTo(w * 0.75, h * 0.71);
+        ctx.lineTo(w * 0.80, h * 0.73);
+        ctx.lineTo(w * 0.85, h * 0.74);
+        ctx.lineTo(w * 0.82, h * 0.77);
+        ctx.lineTo(w * 0.75, h * 0.76);
+        ctx.lineTo(w * 0.68, h * 0.74);
+        ctx.lineTo(w * 0.60, h * 0.79);
+        ctx.lineTo(w * 0.52, h * 0.77);
+        ctx.lineTo(w * 0.45, h * 0.78);
+        ctx.lineTo(w * 0.40, h * 0.74);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawEdges(ctx, w, h, now) {
+        for (let edge of edges) {
+          const a = nodes[edge[0]];
+          const b = nodes[edge[1]];
+          const x1 = a.x * w,
+            y1 = a.y * h;
+          const x2 = b.x * w,
+            y2 = b.y * h;
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+          const phase = (now * 0.002) % 1;
+          gradient.addColorStop(0, `rgba(0, 255, 255, ${0.3 + Math.sin(now * 0.003) * 0.1})`);
+          gradient.addColorStop(phase, "rgba(255, 210, 0, 0.6)");
+          gradient.addColorStop(1, "rgba(0, 180, 255, 0.2)");
+          ctx.strokeStyle = gradient;
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+        }
+      }
+
+      function drawNodes(ctx, w, h, now) {
+        for (let i = 0; i < nodes.length; i++) {
+          const n = nodes[i];
+          const x = n.x * w;
+          const y = n.y * h;
+          const pulse = (Math.sin(now * 0.005 + i) + 1) / 2;
+          const radius = 4 + pulse * 3;
+          ctx.shadowBlur = 12;
+          ctx.shadowColor = "#0ff";
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(0, 255, 200, ${0.7 + pulse * 0.3})`;
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(x, y, radius * 0.6, 0, Math.PI * 2);
+          ctx.fillStyle = "#ffd966";
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(x, y, 2, 0, Math.PI * 2);
+          ctx.fillStyle = "white";
+          ctx.fill();
+          ctx.font = `bold ${Math.max(9, w * 0.012)}px "Fira Code", monospace`;
+          ctx.fillStyle = "rgba(200, 240, 255, 0.9)";
+          ctx.fillText(n.name, x + 6, y - 4);
+        }
+        ctx.shadowBlur = 0;
+      }
+
+      function drawAtmCenter(ctx, w, h, now) {
+        const center = nodes[centerIndex];
+        const x = center.x * w;
+        const y = center.y * h;
+        const radius = 14 + Math.sin(now * 0.015) * 3;
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = "#ffaa44";
+        ctx.beginPath();
+        ctx.arc(x, y, radius + 4, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 200, 80, 0.3)`;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 100, 50, 0.9)`;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x, y, radius - 3, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffcc44";
+        ctx.fill();
+        ctx.font = `bold ${Math.max(14, w * 0.022)}px "Fira Code", monospace`;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText("🏧", x - 9, y + 7);
+        ctx.font = `bold ${Math.max(9, w * 0.012)}px monospace`;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText("ATM", x - 14, y - 8);
+        ctx.shadowBlur = 0;
+      }
+
+      function drawPulses(ctx, now) {
+        for (let pulse of pulses) {
+          pulse.update();
+          const {
+            x,
+            y
+          } = pulse.getPosition();
+          const glow = (Math.sin(now * 0.02) + 1) / 2;
+          const size = 6 + glow * 5;
+          ctx.shadowBlur = 12;
+          ctx.shadowColor = "#ff6600";
+          ctx.beginPath();
+          ctx.arc(x, y, size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 100, 0, ${0.8 + glow * 0.2})`;
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
+          ctx.fillStyle = "#ffcc44";
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+      }
+
+      function drawDataFlow(ctx, w, h, now) {
+        for (let i = 0; i < 30; i++) {
+          const t = (now * 0.008 + i) % 1;
+          const edgeIdx = i % edges.length;
+          const edge = edges[edgeIdx];
+          const a = nodes[edge[0]];
+          const b = nodes[edge[1]];
+          const x1 = a.x * w,
+            y1 = a.y * h;
+          const x2 = b.x * w,
+            y2 = b.y * h;
+          const x = x1 + (x2 - x1) * t;
+          const y = y1 + (y2 - y1) * t;
+          ctx.beginPath();
+          ctx.arc(x, y, 1.8, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 200, 50, ${0.6 + Math.sin(now * 0.02) * 0.3})`;
+          ctx.fill();
+        }
+      }
+
+      function drawScanningCircle(ctx, w, h, now) {
+        const angle = (now * 0.002) % (Math.PI * 2);
+        const cx = w * 0.85;
+        const cy = h * 0.2;
+        const rad = 70;
+        ctx.beginPath();
+        ctx.arc(cx, cy, rad, angle - 0.3, angle + 0.1);
+        ctx.strokeStyle = "rgba(0, 255, 200, 0.7)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx, cy, rad + 10, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(0, 200, 255, 0.2)";
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx, cy, 40 + Math.sin(now * 0.01) * 5, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(0,255,210,0.3)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      function drawFrame() {
+        if (!ctx) return;
+        width = canvas.clientWidth;
+        height = canvas.clientHeight;
+        canvas.width = width;
+        canvas.height = height;
+        drawBackgroundGlow(ctx, width, height);
+        drawGrid(ctx, width, height);
+        drawCoastlines(ctx, width, height);
+        drawEdges(ctx, width, height, time);
+        drawNodes(ctx, width, height, time);
+        drawDataFlow(ctx, width, height, time);
+        drawScanningCircle(ctx, width, height, time);
+        drawAtmCenter(ctx, width, height, time);
+        drawPulses(ctx, time);
+        time += 16;
+      }
+
+      function animate() {
+        if (!canvas.isConnected) return;
+        drawFrame();
+        animationId = requestAnimationFrame(animate);
+      }
+
+      function resizeCanvas() {
+        if (animationId) cancelAnimationFrame(animationId);
+        if (canvas) {
+          width = canvas.clientWidth;
+          height = canvas.clientHeight;
+          canvas.width = width;
+          canvas.height = height;
+          drawFrame();
+          animationId = requestAnimationFrame(animate);
+        }
+      }
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+    })();
+  </script>
+</body>
+
+</html>
