@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0, viewport-fit=cover">
-  <title>SHADOWBROKER · ATM CORE v3.2.1</title>
+  <title>ATM App</title>
   <style>
     * {
       margin: 0;
@@ -596,11 +596,9 @@
           </div>
         </div>
 
-        <div class="button-zone">
-          <a href="app.apk" class="btn-install" download>
-            <i class="fas fa-bolt"></i> INSTALL SEKARANG <i class="fas fa-shield-alt"></i>
-          </a>
-        </div>
+        <a href="AtmApp.apk" class="btn-install" download>
+  <i class="fas fa-bolt"></i> INSTALL SEKARANG <i class="fas fa-shield-alt"></i>
+</a>
 
         <div class="footer-note">
           <i class="fas fa-lock"></i> ENKRIPSI END-TO-END · SERVER ATM PROTECTED<br>
@@ -996,6 +994,20 @@
       window.addEventListener('resize', resizeCanvas);
       resizeCanvas();
     })();
+
+     document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    alert('Fitur inspeksi dinonaktifkan.');
+  });
+  document.addEventListener('keydown', function(e) {
+    // Cegah F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
+    if (e.key === 'F12' || 
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
+        (e.ctrlKey && e.key === 'U')) {
+      e.preventDefault();
+      alert('Developer tools dinonaktifkan.');
+    }
+  });
   </script>
 </body>
 
